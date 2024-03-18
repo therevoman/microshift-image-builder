@@ -1,0 +1,26 @@
+# for projects using image builder
+
+# Temporary file directories
+tmp/
+composer/tmp/
+
+# sensitive env files
+.env-*
+
+# zsh history
+**/.zsh_history
+
+# binaries
+**/bin/*
+
+# kubeconfigs
+**/*kubeconfig*
+
+# iso's
+**/*iso*
+
+# old blueprint files
+blueprints/*
+
+# old kickstart files
+kickstart/*

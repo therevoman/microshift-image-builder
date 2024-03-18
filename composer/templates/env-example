@@ -1,0 +1,24 @@
+# This needs to be a hidden file to be read by make.  Rename with a '.' as the first character.
+# PROJECT_NAME needs to be passed into make to properly read this file and generate output.
+PROJECT_NAME=example
+
+OSTREE_REPO_PATH="/mnt/redhat/ostree"
+OSTREE_REPO_URL=https://local.webserver.home/redhat/ostree/repo
+
+HTTPD_PATH=/mnt/redhat/hosts/microshift
+
+SSH_USER=core
+ADMIN_SSH_KEY=id_rsa_admin.pub
+USER_SSH_KEY=id_rsa.pub
+ADMIN_SSH_PASSWORD="$6$jTlqhkEAIahgvxf0$rJkvatWQFOEa7oCZoSrg0Bb5DInky0prJUP6RkjFBlWfhX4NtbJfAjxuaTynMIRgsrHWukuTAzVgJ.MjK.62j/"
+USER_SSH_PASSWORD="$6$jTlqhkEAIahgvxf0$rJkvatWQFOEa7oCZoSrg0Bb5DInky0prJUP6RkjFBlWfhX4NtbJfAjxuaTynMIRgsrHWukuTAzVgJ.MjK.62j/"
+ROOT_SSH_PASSWORD="$6$jTlqhkEAIahgvxf0$rJkvatWQFOEa7oCZoSrg0Bb5DInky0prJUP6RkjFBlWfhX4NtbJfAjxuaTynMIRgsrHWukuTAzVgJ.MjK.62j/"
+
+
+CA_LETS_ENCRYPT_R3=$(shell cat /etc/pki/ca-trust/source/anchors/lets-encrypt-r3.pem | awk 'NF {sub(/\r/, ""); printf "%s\\n",$$0;}')
+CA_REVOWEB=$(shell cat /etc/pki/ca-trust/source/anchors/test.pem | awk 'NF {sub(/\r/, ""); printf "%s\\n",$$0;}')
+CA_REVOWEB_VSPHERE=$(shell cat /etc/pki/ca-trust/source/anchors/test-crl.0 | awk 'NF {sub(/\r/, ""); printf "%s\\n",$$0;}')
+CA_REVOWEB_VSPHERE_CRL=$(shell cat /etc/pki/ca-trust/source/anchors/test-crl.r1 | awk 'NF {sub(/\r/, ""); printf "%s\\n",$$0;}')
+
+CEPH_MICROSHIFT_KEYRING=$(shell cat /etc/ceph/ceph.client.microshift.keyring | awk 'NF {sub(/\r/, ""); printf "%s\\n",$$0;}')
+CEPH_MICROSHIFT_CONF=$(shell cat /etc/ceph/ceph.conf | awk 'NF {sub(/\r/, ""); printf "%s\\n",$$0;}')
