@@ -1,7 +1,7 @@
-name = "rhel9-microshift"
+name = "example"
 
-description = "RHEL 9 with Microshift for internal infrastructure"
-version = "0.0.18"
+description = "Example with Microshift for internal infrastructure"
+version = "0.0.01"
 modules = []
 groups = []
 
@@ -26,49 +26,19 @@ ntpservers = ["192.168.20.1", "10.2.2.1"]
 ##############################################################
 # user and group customization - move to kickstart, add keys here
 ######################################################
-#[[customizations.group]]
-#name = "admin"
-#gid = 1000
+#[[customizations.sshkey]]
+#user = "admin"
+#key = "${ADMIN_SSH_KEY_CONTENTS}"
 
-#[[customizations.group]]
-#name = "${SSH_USER}"
-#gid = 1001
-
-#[[customizations.user]]
-#name = "admin"
-#description = "Administrator User"
-#password = "${ADMIN_SSH_PASSWORD}"
-#key = "ssh-rsa ${ADMIN_SSH_KEY_CONTENTS}"
-#home = "/home/admin/"
-#shell = "/usr/bin/bash"
-#groups = ["users", "wheel"]
-#uid = 1000
-#gid = 1000
-
-#[[customizations.user]]
-#name = "${SSH_USER}"
-#description = "${SSH_USER}"
-#password = "${USER_SSH_PASSWORD}"
-#key = "ssh-rsa ${USER_SSH_KEY_CONTENTS}"
-#home = "/home/${SSH_USER}/"
-#shell = "/usr/bin/bash"
-#groups = ["users", "wheel"]
-#uid = 1001
-#gid = 1001
-
-[[customizations.sshkey]]
-user = "admin"
-key = "${ADMIN_SSH_KEY_CONTENTS}"
-
-[[customizations.sshkey]]
-user = "${SSH_USER}"
-key = "${USER_SSH_KEY_CONTENTS}"
+#[[customizations.sshkey]]
+#user = "${SSH_USER}"
+#key = "${USER_SSH_KEY_CONTENTS}"
 
 ##############################################################
 # services
 ######################################################
 [customizations.services]
-enabled = ["microshift", "cockpit.socket", "var-mnt-cephfs.automount"]
+enabled = ["microshift", "cockpit.socket"]
 
 ##############################################################
 # firewall customization
@@ -160,10 +130,6 @@ version = "*"
 name = "iotop"
 version = "*"
 
-[[packages]]
-name = "ceph-common"
-version = "*"
-
 
 ##############################################################
 # Directory Customization
@@ -173,65 +139,6 @@ path = "/etc/systemd/journald.conf.d"
 
 [[customizations.directories]]
 path = "/etc/microshift/manifests.d"
-
-##############################################################
-# Ceph Customization
-######################################################
-# Customize ceph keyring
-[[customizations.directories]]
-path = "/etc/ceph"
-
-[[customizations.files]]
-path = "/etc/ceph/ceph.conf"
-mode = "0755"
-user = "root"
-group = "root"
-data = '''
-${CEPH_MICROSHIFT_CONF}
-'''
-
-[[customizations.files]]
-path = "/etc/ceph/ceph.client.microshift.keyring"
-mode = "0755"
-user = "root"
-group = "root"
-data = '''
-${CEPH_MICROSHIFT_KEYRING}
-'''
-
-# automount files
-[[customizations.files]]
-path = "/etc/systemd/system/var-mnt-cephfs.mount"
-mode = "0755"
-user = "root"
-group = "root"
-data = '''
-[Unit]
-Description=Cephfs microshift mountpoint
-
-[Mount]
-What=:/
-Where=/var/mnt/cephfs
-Type=ceph
-Options=_netdev,name=microshift,fs=microshift
-TimeoutSec=30
-
-[Install]
-WantedBy=multi-user.target
-'''
-
-[[customizations.files]]
-path = "/etc/systemd/system/var-mnt-cephfs.automount"
-mode = "0755"
-user = "root"
-group = "root"
-data = '''
-[Automount]
-Where=/var/mnt/cephfs
-[Install]
-WantedBy=multi-user.target
-'''
-# don't forget about the systemd unit.  needs to be added above
 
 
 ##############################################################
@@ -254,7 +161,7 @@ path = "/etc/microshift/config.yaml"
 mode = "0755"
 data = '''
 dns:
-  baseDomain: micro.revoweb.com
+  baseDomain: micro.example.home
 network:
   clusterNetwork:
   - 10.42.0.0/16
@@ -263,13 +170,11 @@ network:
   serviceNodePortRange: 30000-32767
 node:
   hostnameOverride: microshift
-  nodeIP: 192.168.20.33
+  nodeIP: 192.168.1.33
 apiServer:
   subjectAltNames:
   - microshift
-  - microshift.revoweb.home
-  - microshift.revoweb.com
-  - micro.revoweb.com
+  - microshift.example.home
 '''
 
 # Customize microshift lvmd.yaml
@@ -338,7 +243,7 @@ metadata:
   name: argocd-server
   namespace: argocd
 spec:
-  host: argocd-server-argocd.apps.micro.revoweb.com
+  host: argocd-server-argocd.apps.micro.example.home
   port:
     targetPort: https
   tls:
@@ -368,34 +273,34 @@ data = '''
 ${CA_LETS_ENCRYPT_R3}
 '''
 
-# revoweb-ca
+# example-ca
 [[customizations.files]]
-path = "/etc/pki/ca-trust/source/anchors/revoweb.pem"
+path = "/etc/pki/ca-trust/source/anchors/example.pem"
 mode = "0755"
 user = "root"
 group = "root"
 data = '''
-${CA_REVOWEB}
+${CA_EXAMPLE}
 '''
 
 # vcenter file 1
 [[customizations.files]]
-path = "/etc/pki/ca-trust/source/anchors/79f05bae.0"
+path = "/etc/pki/ca-trust/source/anchors/test.0"
 mode = "0755"
 user = "root"
 group = "root"
 data = '''
-${CA_REVOWEB_VSPHERE}
+${CA_VSPHERE}
 '''
 
 # vcenter crl
 [[customizations.files]]
-path = "/etc/pki/ca-trust/source/anchors/79f05bae.r1"
+path = "/etc/pki/ca-trust/source/anchors/test-crl.r1"
 mode = "0644"
 user = "root"
 group = "root"
 data = '''
-${CA_REVOWEB_VSPHERE_CRL}
+${CA_VSPHERE_CRL}
 '''
 
 

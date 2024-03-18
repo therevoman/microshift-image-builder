@@ -1,7 +1,7 @@
 SHELL=bash
 
-ENVFILE ?= ../.env-${PROJECT_NAME}
-ENVFILE_EXAMPLE ?= template/.env-example
+ENVFILE ?= .env-${PROJECT_NAME}
+ENVFILE_EXAMPLE ?= ${CURRENT_DIR}/template/.env-example
 
 RHEL_ISO_FILENAME ?= rhel-9.3-x86_64-boot.iso
 CURRENT_DIR := $(shell pwd)
@@ -12,6 +12,7 @@ BUILDID ?= ""
 OSTREE_REPO_PATH ?= /mnt/redhat/ostree
 OSTREE_REPO_URL ?= http://localhost/ostree/repo
 OSTREE_BRANCH ?= DEV
+OSTREE_REF ?= rhel/9/x86_64/edge
 
 BLUEPRINT_FILENAME ?= ${PROJECT_NAME}.toml
 BLUEPRINT_TEMPLATE ?= ${BLUEPRINT_FILENAME}.tpl
@@ -38,13 +39,12 @@ ifneq (,$(wildcard ${ENVFILE}))
     export
 endif
 
-
 define newline # a literal \n
 
 
 endef
 
-.PHONY: clean create-temp-dir
+.PHONY: create-temp-dir clean create update blueprint custom-blueprint kickstart deploy-kickstart push-blueprint build-new-image build-update-image start-build start-update-build wait-for-build create-temp-buildfolder extract-image create-repo update-repo cleanup-temp-buildfolder generate-password clean-all generate-example
 
 default: help
 
@@ -55,19 +55,36 @@ p-%:
 	@echo '$*=$(subst ','\'',$(subst $(newline),\n,$($*)))'
 
 # make sure the unique tmp folder exists, run in .PHONY
-create-temp-dir:
+create-temp-dir: check-config
 	mkdir -p ${TMP_DIR}
 
-# Main target for creating new ostree repo
+## Main target for creating new ostree repo
 create: blueprint kickstart push-blueprint build-new-image create-temp-buildfolder extract-image create-repo deploy-kickstart
 	echo BUILDID=${BUILDID}
 
-# Main target for updating ostree repo from new template.
+## Main target for updating ostree repo from new template.
 update: blueprint kickstart push-blueprint build-update-image create-temp-buildfolder extract-image update-repo cleanup-temp-buildfolder
 	echo BUILDID=${BUILDID}
 
-## Generate custom blueprint file ${BLUEPRINT_FILENAME}.toml
-blueprint: create-temp-dir custom-blueprint
+# Generate custom blueprint file ${BLUEPRINT_FILENAME}.toml from ${BLUEPRINT_FILENAME}.toml.tpl
+blueprint: create-temp-dir custom-blueprint 
+
+check-config:
+ifneq (,$(wildcard ${PROJECT_NAME}))
+	@echo "❗ERROR project name not detected. Ensure env file is named appropriately and make is prefixed with PROJECT_NAME=<myproject>."
+	exit 1
+endif
+ifneq (,$(wildcard ${ENVFILE}))
+	@echo "❗ERROR project envfile not detected. Ensure env vars are exported and make is prefixed with PROJECT_NAME=<myproject>."
+	exit 1
+endif
+
+
+check-buildid:
+ifneq (,$(wildcard ${BUILDID}))
+	@echo "❗ERROR BUILDID not defined. If running this target standalone add BUILDID=<mybuildid> before the make command."
+	exit 1
+endif
 
 custom-blueprint: ${BLUEPRINT_TEMPLATE}
 
@@ -80,7 +97,7 @@ ifeq ($(PROJECT_NAME),'')
 endif
 	cat ${TEMPLATE_DIR}/${BLUEPRINT_TEMPLATE} | envsubst > ${TMP_DIR}/${BLUEPRINT_FILENAME}
 
-## Generate custom kickstart file ${KICKSTART_FILENAME}.toml
+# Generate custom kickstart file ${KICKSTART_FILENAME}.toml from ${KICKSTART_FILENAME}.toml.tpl
 kickstart: create-temp-dir ${KICKSTART_TEMPLATE}
 
 ${PROJECT_NAME}.ks.tpl: ${PROJECT_NAME}.ks
@@ -95,28 +112,29 @@ endif
 deploy-kickstart: kickstart
 	cp ${TMP_DIR}/${KICKSTART_FILENAME} ${HTTPD_PATH}/${KICKSTART_SHORT_FILENAME}
 
-push-blueprint:
+push-blueprint: check-config
 	composer-cli blueprints push ${TMP_DIR}/${BLUEPRINT_FILENAME};
 
 build-new-image: start-build wait-for-build
 
 build-update-image: start-update-build wait-for-build
 
-start-build:
-	$(eval BUILDID=$(shell composer-cli compose start-ostree rhel9-microshift edge-commit | awk '{print $$2}'))
+start-build: check-buildid
+	$(eval BUILDID=$(shell composer-cli compose start-ostree ${PROJECT_NAME} edge-commit | awk '{print $$2}'))
 	@echo new BUILDID is ${BUILDID}
 
-start-update-build:
-	$(eval BUILDID=$(shell composer-cli compose start-ostree rhel9-microshift edge-commit --url https://httpd.revoweb.com/redhat/ostree/repo --ref rhel/9/x86_64/edge | awk '{print $$2}'))
+start-update-build: check-buildid
+	$(eval BUILDID=$(shell composer-cli compose start-ostree ${PROJECT_NAME} edge-commit --url ${OSTREE_REPO_URL} --ref ${OSTREE_REF} | awk '{print $$2}'))
 	@echo update BUILDID is ${BUILDID}
 
-wait-for-build:
+# Simple look to check status of image builder with Make
+wait-for-build: check-buildid
 	@echo wait for build ${BUILDID} to stop RUNNING
 	set -e; \
 	while [[ "$$(composer-cli compose status | grep ${BUILDID} | awk '{print $$2}')" == 'RUNNING' ]]; do echo RUNNING $$(date); sleep 30; done;
 	@echo done waiting;
 
-create-temp-buildfolder:
+create-temp-buildfolder: check-buildid
 	@echo BUILDID=${BUILDID}
 	#rm -rf ${TMP_DIR}/${BUILDID}
 	mkdir -p ${TMP_DIR}/${BUILDID}
@@ -125,28 +143,37 @@ extract-image: create-temp-buildfolder
 	composer-cli compose image ${BUILDID} --filename ${TMP_DIR}/${BUILDID}/
 	tar -xf ${TMP_DIR}/${BUILDID}/${BUILDID}-commit.tar -C ${TMP_DIR}/${BUILDID}/
 
-create-repo: 
+# Removes and creates a clean repository folder
+create-repo: check-buildid
 	rm -rf ${OSTREE_REPO_PATH}/repo
 	tar -xf ${TMP_DIR}/${BUILDID}/${BUILDID}-commit.tar -C ${OSTREE_REPO_PATH}/
 
-
-update-repo: 
+# Updates repository folder with files from previous build
+update-repo: check-buildid
 	ostree --repo=${OSTREE_REPO_PATH}/repo pull-local ${TMP_DIR}/${BUILDID}/repo
 
-cleanup-temp-buildfolder:
-	rm -rf ${TMP_DIR}/${BUILDID}
-
-
+## return an encrypted password
 generate-password:
 	openssl passwd -6
 
-## Clean up a cluster install dir
-clean:
-	rm -rf \
-		${CURRENT_DIR}/tmp/${PROJECT_NAME}
+## Generate sample .env file and templates
+generate-example:
+	@echo Creting custom .env-example file.  Verify templates for kickstart and image builder in "${TEMPLATE_DIR}"
+	cp templates/env-example ${CURRENT_DIR}/.env-example
+	@echo Create new repository with the command "sudo PROJECT_NAME=example make create"
+	@echo Update repository with the command "sudo PROJECT_NAME=example make update"
 
-## Clean up blueprints and compose
-clean-all: clean
+## Clean up the tmp folder created for PROJECT_NAME
+clean: check-config
+	rm -rf \
+		${TMP_DIR}
+
+# Used internally to clean up folder of build BUILDID
+cleanup-temp-buildfolder: check-buildid
+	rm -rf ${TMP_DIR}/${BUILDID}
+
+## Clean up blueprints and compose's in composer-cli
+clean-all: clean cleanup-temp-buildfolder
 	composer-cli compose status | grep ${PROJECT_NAME} | awk '{print $$1}' | xargs -I {} composer-cli compose delete {}
 	composer-cli blueprints delete ${PROJECT_NAME}
 
@@ -154,7 +181,7 @@ clean-all: clean
 ## This help screen
 help:
 	@printf "Available targets:\n"
-	@awk '/^[a-zA-Z\-\_0-9%:\\]+/ { \
+	@awk '/^[a-zA-Z\-_0-9%:\\]+/ { \
 		helpMessage = match(lastLine, /^## (.*)/); \
 		if (helpMessage) { \
 			helpCommand = $$1; \

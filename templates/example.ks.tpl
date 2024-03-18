@@ -31,8 +31,8 @@ rootpw --iscrypted ${ROOT_SSH_PASSWORD}
 services --enabled=ostree-remount
 group --name=admin --gid=1000
 user --name=admin --gecos="Administrator" --uid=1000 --gid=1000 --groups=users,wheel --password ${ADMIN_SSH_PASSWORD} --iscrypted
-group --name=nrevo --gid=1001
-user --name=nrevo --gecos="Nate Revo" --uid=1001 --gid=1001 --groups=users,wheel --password ${USER_SSH_PASSWORD} --iscrypted
+group --name=core --gid=1001
+user --name=core --gecos="core User" --uid=1001 --gid=1001 --groups=users,wheel --password ${USER_SSH_PASSWORD} --iscrypted
 # --url = location of repo --osname=stateroot=distro --remote=just_a_label_for_counting --ref=branch
 ostreesetup --nogpg --url=${OSTREE_REPO_URL} --osname=rhel --remote=edge --ref=rhel/9/x86_64/edge
 
@@ -65,7 +65,7 @@ firewall-offline-cmd --zone=public --add-port=443/tcp
 %post --log=/var/log/anaconda/post-install.log
 # additional updates
 echo -e '${SSH_USER}\tALL=(ALL)\tNOPASSWD: ALL' >> /etc/sudoers
-echo -e 'url=https://httpd.revoweb.com/redhat/ostree/repo' >> /etc/ostree/remotes.d/edge.conf
+echo -e 'url=https://webserver.example.home/redhat/ostree/repo' >> /etc/ostree/remotes.d/edge.conf
 # preconfigure kube config for users
 mkdir -p /home/admin/.kube
 cp /var/lib/microshift/resources/kubeadmin/kubeconfig /home/admin/.kube/config
