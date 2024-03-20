@@ -10,9 +10,9 @@ HTTPD_PATH=/mnt/redhat/hosts/microshift
 SSH_USER=core
 ADMIN_SSH_KEY=id_rsa_admin.pub
 USER_SSH_KEY=id_rsa.pub
-ADMIN_SSH_PASSWORD="$6$jTlqhkEAIahgvxf0$rJkvatWQFOEa7oCZoSrg0Bb5DInky0prJUP6RkjFBlWfhX4NtbJfAjxuaTynMIRgsrHWukuTAzVgJ.MjK.62j/"
-USER_SSH_PASSWORD="$6$jTlqhkEAIahgvxf0$rJkvatWQFOEa7oCZoSrg0Bb5DInky0prJUP6RkjFBlWfhX4NtbJfAjxuaTynMIRgsrHWukuTAzVgJ.MjK.62j/"
-ROOT_SSH_PASSWORD="$6$jTlqhkEAIahgvxf0$rJkvatWQFOEa7oCZoSrg0Bb5DInky0prJUP6RkjFBlWfhX4NtbJfAjxuaTynMIRgsrHWukuTAzVgJ.MjK.62j/"
+ADMIN_SSH_PASSWORD="$6$jTlqhkEAIahgvxf0$rJkvatWQFOEa7oCZoSrg0Bb5DInky0prJUP6RkjFBlWfhX4NtbJfAjxuaTynMIRgsrHWukuTAzVgJ.MjK.62j/" # notsecret
+USER_SSH_PASSWORD="$6$jTlqhkEAIahgvxf0$rJkvatWQFOEa7oCZoSrg0Bb5DInky0prJUP6RkjFBlWfhX4NtbJfAjxuaTynMIRgsrHWukuTAzVgJ.MjK.62j/" # notsecret
+ROOT_SSH_PASSWORD="$6$jTlqhkEAIahgvxf0$rJkvatWQFOEa7oCZoSrg0Bb5DInky0prJUP6RkjFBlWfhX4NtbJfAjxuaTynMIRgsrHWukuTAzVgJ.MjK.62j/" # notsecret
 
 
 CA_LETS_ENCRYPT_R3=$(shell cat /etc/pki/ca-trust/source/anchors/lets-encrypt-r3.pem | awk 'NF {sub(/\r/, ""); printf "%s\\n",$$0;}')
