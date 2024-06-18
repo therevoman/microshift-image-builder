@@ -68,7 +68,7 @@ spec:
           allowPrivilegeEscalation: false
           capabilities:
             drop: ["ALL"]
-        image: quay.io/openshift/origin-console:4.14
+        image: quay.io/openshift/origin-console:4.15
         env:
         - name: BRIDGE_USER_AUTH
           value: disabled

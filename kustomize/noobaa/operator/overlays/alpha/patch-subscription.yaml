@@ -1,0 +1,6 @@
+- op: replace
+  path: /spec/channel
+  value: alpha
+- op: replace
+  path: /spec/startingCSV
+  value: noobaa-operator.v5.8.0

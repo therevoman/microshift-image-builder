@@ -1,0 +1,18 @@
+apiVersion: noobaa.io/v1alpha1
+kind: NooBaa
+metadata:
+  name: noobaa
+  namespace: noobaa-operator
+spec:
+  cleanupPolicy: {}
+  security:
+    kms: {}
+ dbResources:
+   requests:
+     cpu: '0.2'
+     memory: 2Gi
+ dbType: postgres
+ coreResources:
+   requests:
+     cpu: '0.2'
+     memory: 2Gi
