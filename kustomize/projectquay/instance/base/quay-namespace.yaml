@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: quay
+  annotations:
+    openshift.io/description: "Red Hat Quay Enterprise Container Image Repository"
+    openshift.io/display-name: "Quay"
+  labels:
+    kubernetes.io/metadata.name: quay
+    name: quay

@@ -1,0 +1,13 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  labels:
+    operators.coreos.com/noobaa-operator.my-noobaa-operator: ""
+  name: noobaa-operator
+  namespace: noobaa-operator
+spec:
+  channel: patch-me-see-overlays-dir
+  name: noobaa-operator
+  source: operatorhubio-catalog
+  sourceNamespace: openshift-marketplace
+  currentCSV: patch-me-see-overlays-dir

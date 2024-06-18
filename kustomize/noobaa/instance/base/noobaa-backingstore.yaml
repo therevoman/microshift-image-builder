@@ -1,0 +1,15 @@
+apiVersion: noobaa.io/v1alpha1
+kind: BackingStore
+metadata:
+  labels:
+    app: noobaa
+  name: noobaa-pv-backing-store
+  namespace: noobaa
+spec:
+  pvPool:
+    numVolumes: 1
+    resources:
+      requests:
+        storage: 50Gi
+    storageClass: topolvm-provisioner-immediate
+  type: pv-pool

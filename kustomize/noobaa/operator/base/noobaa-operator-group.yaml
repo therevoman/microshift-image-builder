@@ -1,0 +1,11 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  annotations:
+    olm.providedAPIs: ObjectBucket.v1alpha1.objectbucket.io,ObjectBucketClaim.v1alpha1.objectbucket.io
+  name: operatorgroup
+  namespace: noobaa-operator
+spec:
+  targetNamespaces:
+  - noobaa-operator
+  upgradeStrategy: Default
