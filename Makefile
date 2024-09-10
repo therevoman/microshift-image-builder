@@ -7,7 +7,7 @@ RHEL_ISO_FILENAME ?= rhel-9.3-x86_64-boot.iso
 CURRENT_DIR := $(shell pwd)
 TEMPLATE_DIR := ${CURRENT_DIR}/templates
 TMP_DIR ?= ${CURRENT_DIR}/tmp/${PROJECT_NAME}
-BUILDID ?= ""
+#BUILDID ?= ""
 
 OSTREE_REPO_PATH ?= /mnt/redhat/ostree
 OSTREE_REPO_URL ?= http://localhost/ostree/repo
@@ -34,10 +34,12 @@ PULL_SECRET_FILE ?= pull-secret.json
 PULL_SECRET ?= $(shell cat ${PULL_SECRET_DIR}/${PULL_SECRET_FILE})
 
 # found in https://stackoverflow.com/questions/44628206/how-to-load-and-export-variables-from-an-env-file-in-makefile
-ifneq (,$(wildcard ${ENVFILE}))
-    include ${ENVFILE}
-    export
-endif
+# stopped using 2024/08/14 because make $(shell cat file.txt) by default strips all newlines
+# instead use `source <envfile>`
+#ifneq (,$(wildcard ${ENVFILE}))
+#    include ${ENVFILE}
+#    export
+#endif
 
 define newline # a literal \n
 
@@ -69,17 +71,23 @@ create: blueprint kickstart push-blueprint build-new-image create-temp-buildfold
 	echo BUILDID=${BUILDID}
 
 ## Main target for updating ostree repo from new template.
-update: blueprint kickstart push-blueprint build-update-image create-temp-buildfolder extract-image update-repo cleanup-temp-buildfolder
+update: increment-version blueprint kickstart push-blueprint build-update-image create-temp-buildfolder extract-image update-repo cleanup-temp-buildfolder
 	echo BUILDID=${BUILDID}
 
+# use sourced IMAGE_VERSION to update the IMAGE_VERSION in the envfile
+increment-version:
+	$(if $(value IMAGE_VERSION),, $(eval $(error ❗ERROR IMAGE_VERSION project name not detected. Ensure env vars are sourced and make is prefixed with PROJECT_NAME=<myproject>.)))
+	$(eval IMAGE_VERSION=$(shell echo ${IMAGE_VERSION} | awk -F. -v OFS=. '{$$NF++; print}'))
+	@echo NEW_IMAGE_VERSION=${IMAGE_VERSION}
+	$(shell sed -i 's/IMAGE_VERSION=.*/IMAGE_VERSION=${IMAGE_VERSION}/g' .env-${PROJECT_NAME})
 # Generate custom blueprint file ${BLUEPRINT_FILENAME}.toml from ${BLUEPRINT_FILENAME}.toml.tpl
-blueprint: create-temp-dir custom-blueprint 
+blueprint: check-config create-temp-dir custom-blueprint 
 
 check-config:
 	@echo check-config
 	@echo PROJECT_NAME=${PROJECT_NAME}
 	$(info Checking if PROJECT_NAME environment variable is set)
-	$(if $(value PROJECT_NAME),, $(echo hello))
+	$(if $(value PROJECT_NAME),, $(eval $(error ❗ERROR PROJECT_NAME project name not detected. Ensure env vars are sourced and make is prefixed with PROJECT_NAME=<myproject>.)))
 
 
 # the error has to be wrapped in an eval otherwise it will be processed every time the makefile is processed, basically useless.
@@ -177,8 +185,10 @@ delete-sources:
 	-composer-cli sources delete local-rhel9-appstream
 	-composer-cli sources delete local-rhel9-fast-datapath
 	-composer-cli sources delete local-ocp-4.15-for-rhel9
+	-composer-cli sources delete local-ocp-4.16-for-rhel9
 	-composer-cli sources delete local-rhceph-7-tools-for-rhel-9
 	-composer-cli sources delete local-revoweb-for-rhel9
+	-composer-cli sources delete local-gitops-1.13-for-rhel-9
 	sudo systemctl restart osbuild-composer.service
 
 ## Add custom composer sources
@@ -187,9 +197,10 @@ add-sources: repofiles
 	composer-cli sources add ${TMP_DIR}/repofiles/local-rhel9-baseos.toml
 	composer-cli sources add ${TMP_DIR}/repofiles/local-rhel9-appstream.toml
 	composer-cli sources add ${TMP_DIR}/repofiles/local-rhel9-fast-datapath.toml
-	composer-cli sources add ${TMP_DIR}/repofiles/local-rhel9-rhocp-4.15.toml
+	composer-cli sources add ${TMP_DIR}/repofiles/local-rhel9-rhocp-4.16.toml
 	composer-cli sources add ${TMP_DIR}/repofiles/local-rhceph-7-tools-for-rhel.toml
 	composer-cli sources add ${TMP_DIR}/repofiles/local-revoweb-for-rhel9.toml
+	composer-cli sources add ${TMP_DIR}/repofiles/local-gitops-1.13-for-rhel-9.toml
 	sudo systemctl restart osbuild-composer.service
 
 ## Clean up the tmp folder created for PROJECT_NAME
