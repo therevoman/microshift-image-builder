@@ -6,6 +6,7 @@ composer/tmp/
 
 # sensitive env files
 .env-*
+.project_name*
 
 # zsh history
 **/.zsh_history
